@@ -98,7 +98,7 @@ async def list_all_users():
     data = []       
     for user in users:
         user_dict = {} 
-        query = user.profile.get["id"]
+        query = user.profile
         profile = collection.find_one(query)
         user_dict["id"] = str(user.id)
         user_dict["fullname"] = user.fullname
