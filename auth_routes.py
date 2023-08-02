@@ -1,11 +1,14 @@
 from fastapi import APIRouter,status
 from fastapi.exceptions import HTTPException
-from database import Session,engine
+from database import Session,engine,client
 from schema import SignUpModel
 from models import User, Profile
 from fastapi.exceptions import HTTPException
 from werkzeug.security import generate_password_hash , check_password_hash
 from fastapi.encoders import jsonable_encoder
+
+db = client["XPAY_DB"] 
+collection = db["profile"] 
 
 auth_router = APIRouter(
     prefix='/auth'
@@ -61,14 +64,11 @@ async def signup(user:SignUpModel):
     session.add(new_user)
 
     session.commit()
-
-    profile = Profile(
-        user_id = str(new_user.id),
-        profile_picture = user.profile_picture
-    )
-    session.add(profile)
-
-    session.commit()
+   
+    collection.insert_one({
+        "user_id": new_user.id,
+        "profile_picture": user.profile_picture
+    })
 
     return {"maeesage": "user signup succesfull",
             "status":"success"}, 201
@@ -94,7 +94,18 @@ async def list_all_users():
     }
     for user in users
 ]
-        
+
+    data = []       
+    for user in users:
+        user_dict = {} 
+        query = user.profile.get["id"]
+        profile = collection.find_one(query)
+        user_dict["id"] = str(user.id)
+        user_dict["fullname"] = user.fullname
+        user_dict["email"] = user.email
+        user_dict["phone"] = user.phone
+        user_dict["profile_picture"] = profile
+        data.append(user_dict)
 
 
     return {"data":data,
